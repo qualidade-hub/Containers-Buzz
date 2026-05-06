@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buzz Fly - Controle de Containers</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1410; --bg2: #161d17; --bg3: #1e2820;
+    --border: #2a3a2c; --border2: #3a5040;
+    --green: #4ade80; --green2: #22c55e; --green-dim: #1a4a2a;
+    --amber: #fbbf24; --amber-dim: #4a3a10;
+    --red: #f87171; --red-dim: #4a1a1a;
+    --text: #e8f0e9; --text2: #8fa892; --text3: #4a6050;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+
+  .topbar {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 13px 24px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--green); letter-spacing: 2px; }
+  .logo span { color: var(--text3); font-weight: 400; }
+  .stats-bar { display: flex; gap: 20px; }
+  .stat { font-family: var(--mono); font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 6px; }
+  .stat strong { color: var(--text); font-size: 14px; font-weight: 500; }
+  .sdot { width: 6px; height: 6px; border-radius: 50%; }
+
+  .main { display: grid; grid-template-columns: 1fr 380px; height: calc(100vh - 50px); }
+
+  .plant-panel { padding: 20px 24px; overflow-y: auto; border-right: 1px solid var(--border); }
+
+  .section-label {
+    font-family: var(--mono); font-size: 10px; color: var(--text3);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .aerial {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 12px 12px; margin-bottom: 24px;
+  }
+  .aerial-top { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 2px; text-align: center; margin-bottom: 12px; }
+  .containers-aerial { display: flex; gap: 3px; align-items: stretch; justify-content: center; }
+  .dir-label { font-family: var(--mono); font-size: 9px; color: var(--text3); writing-mode: vertical-lr; transform: rotate(180deg); letter-spacing: 1px; align-self: center; padding: 0 4px; }
+
+  .ct-aerial {
+    flex: 1; max-width: 42px; min-height: 100px;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 3px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: space-between; padding: 5px 3px 4px;
+    transition: all 0.15s;
+  }
+  .ct-aerial:hover { border-color: var(--green2); background: #1a2e1c; }
+  .ct-aerial.selected { border-color: var(--green); background: #1a2e1c; box-shadow: 0 0 0 1px var(--green); }
+  .ct-aerial.occupied { border-color: var(--green-dim); background: #142014; }
+  .ct-aerial.occupied.selected { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+  .ct-num-aerial { font-family: var(--mono); font-size: 8px; font-weight: 600; color: var(--text2); writing-mode: vertical-lr; transform: rotate(180deg); }
+  .ct-aerial.selected .ct-num-aerial { color: var(--green); }
+  .ct-slots-aerial { display: flex; flex-direction: column; gap: 2px; width: 100%; align-items: center; }
+  .slot-a { width: 78%; height: 7px; border-radius: 1px; background: var(--bg3); border: 0.5px solid var(--border); }
+  .slot-a.f { background: var(--green-dim); border-color: var(--green2); }
+  .ct-sdot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); }
+  .ct-aerial.occupied .ct-sdot { background: var(--green2); }
+
+  .grid-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 7px; }
+  .ct-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 9px 10px 8px; cursor: pointer; transition: all 0.15s;
+  }
+  .ct-card:hover { border-color: var(--border2); background: var(--bg3); }
+  .ct-card.selected { border-color: var(--green); }
+  .ct-card.occupied { border-color: var(--green-dim); }
+  .ct-card.occupied.selected { border-color: var(--green); }
+  .ct-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .ct-card-num { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); }
+  .ct-card.selected .ct-card-num { color: var(--green); }
+  .ct-badge { font-size: 9px; font-family: var(--mono); padding: 2px 5px; border-radius: 2px; }
+  .b-empty { background: var(--bg3); color: var(--text3); }
+  .b-occ { background: var(--green-dim); color: var(--green2); }
+  .mini-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 3px; }
+  .ms { height: 6px; border-radius: 1px; background: var(--bg3); border: 0.5px solid var(--border); }
+  .ms.f { background: var(--green-dim); border-color: var(--green2); }
+  .ct-lote-text { font-size: 10px; color: var(--text2); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--mono); }
+
+  /* DETAIL PANEL */
+  .detail-panel { background: var(--bg2); display: flex; flex-direction: column; overflow-y: auto; }
+  .detail-none { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--text3); }
+  .detail-none p { font-size: 13px; font-family: var(--mono); }
+  .detail-content { display: none; flex-direction: column; flex: 1; }
+  .detail-content.open { display: flex; }
+
+  .detail-header { padding: 16px 20px 13px; border-bottom: 1px solid var(--border); background: var(--bg3); }
+  .dh-top { display: flex; align-items: center; justify-content: space-between; }
+  .dh-num { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--green); }
+  .dh-sub { font-family: var(--mono); font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .btn-close { background: none; border: 1px solid var(--border); color: var(--text2); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .btn-close:hover { border-color: var(--red); color: var(--red); }
+
+  .detail-body { padding: 14px 20px; flex: 1; display: flex; flex-direction: column; gap: 13px; }
+
+  .fl { font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .fi, .fs {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 5px; padding: 8px 10px; font-size: 13px;
+    font-family: var(--sans); color: var(--text); outline: none;
+    transition: border-color 0.15s; appearance: none;
+  }
+  .fi:focus, .fs:focus { border-color: var(--green2); }
+  .fs { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a6050' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; cursor: pointer; }
+  .fs option { background: var(--bg3); }
+  .fr2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* APPLY ALL BANNER */
+  .apply-all-box {
+    background: var(--amber-dim); border: 1px solid #6a5020;
+    border-radius: 6px; padding: 11px 12px;
+  }
+  .apply-all-title { font-family: var(--mono); font-size: 10px; color: var(--amber); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .apply-all-title::before { content: '⚡'; font-size: 11px; }
+  .btn-apply-all {
+    width: 100%; background: var(--amber); color: #1a0f00;
+    border: none; border-radius: 5px; padding: 9px;
+    font-size: 12px; font-family: var(--mono); font-weight: 600;
+    cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px;
+  }
+  .btn-apply-all:hover { background: #fcd34d; }
+
+  /* SLOTS FLOOR PLAN */
+  .slots-section { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 11px; }
+  .slots-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .slots-title { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+  .slots-count { font-size: 11px; color: var(--green2); font-family: var(--mono); font-weight: 500; }
+
+  /* Container floor plan with door */
+  .floorplan-wrap {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 8px; display: flex; gap: 6px; align-items: stretch;
+  }
+  .fp-door {
+    width: 22px; flex-shrink: 0;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 3px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+  }
+  .fp-door-label { font-family: var(--mono); font-size: 7px; color: var(--green2); writing-mode: vertical-lr; transform: rotate(180deg); letter-spacing: 1px; }
+  .fp-door-icon { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--green2); }
+  .fp-arrow { font-size: 10px; color: var(--green); align-self: center; flex-shrink: 0; }
+  .fp-grid {
+    flex: 1; display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 5px;
+  }
+
+  .slot-btn {
+    aspect-ratio: 1.2; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 4px;
+    cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+    transition: all 0.15s; padding: 3px;
+  }
+  .slot-btn:hover { border-color: var(--border2); background: var(--bg); }
+  .slot-btn.sf { background: var(--green-dim); border-color: var(--green2); }
+  .slot-btn.sf:hover { background: #1a4a20; border-color: var(--green); }
+  .sn { font-family: var(--mono); font-size: 9px; font-weight: 600; color: var(--text3); }
+  .slot-btn.sf .sn { color: var(--green2); }
+  .si { width: 18px; height: 12px; border: 1px solid var(--border); border-radius: 2px; background: var(--bg3); }
+  .slot-btn.sf .si { background: #1D9E75; opacity: 0.5; border-color: var(--green2); }
+  .sl { font-size: 7px; font-family: var(--mono); color: var(--green2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+
+  .fp-hint { font-size: 10px; font-family: var(--mono); color: var(--text3); text-align: center; margin-top: 7px; }
+
+  .btn-row { display: flex; gap: 8px; }
+  .btn-p { background: var(--green2); color: #0a1a0c; border: none; border-radius: 5px; padding: 10px 16px; font-size: 13px; font-family: var(--sans); font-weight: 600; cursor: pointer; transition: all 0.15s; flex: 1; }
+  .btn-p:hover { background: var(--green); }
+  .btn-g { background: transparent; color: var(--text2); border: 1px solid var(--border); border-radius: 5px; padding: 10px 14px; font-size: 13px; font-family: var(--sans); cursor: pointer; transition: all 0.15s; flex: 0.6; }
+  .btn-g:hover { border-color: var(--red); color: var(--red); }
+
+  .ts-label { font-family: var(--mono); font-size: 10px; color: var(--text3); padding: 8px 20px; border-top: 1px solid var(--border); margin-top: auto; }
+
+  /* SLOT MODAL */
+  .modal-wrap { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: center; justify-content: center; }
+  .modal-wrap.open { display: flex; }
+  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 20px; width: 290px; }
+  .modal-title { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--green); margin-bottom: 14px; }
+  .modal-btns { display: flex; gap: 7px; margin-top: 12px; }
+  .mb-p { background: var(--green2); color: #0a1a0c; border: none; border-radius: 5px; padding: 9px 14px; font-size: 12px; font-family: var(--mono); font-weight: 600; cursor: pointer; flex: 1; }
+  .mb-p:hover { background: var(--green); }
+  .mb-g { background: transparent; color: var(--text3); border: 1px solid var(--border); border-radius: 4px; padding: 9px 10px; font-size: 11px; font-family: var(--mono); cursor: pointer; }
+  .mb-g:hover { border-color: var(--border2); color: var(--text2); }
+  .mb-r { background: transparent; color: var(--red); border: 1px solid var(--red-dim); border-radius: 4px; padding: 9px 10px; font-size: 11px; font-family: var(--mono); cursor: pointer; }
+
+  .toast { position: fixed; bottom: 22px; right: 22px; background: var(--green2); color: #0a1a0c; font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 10px 18px; border-radius: 5px; z-index: 300; transform: translateY(60px); opacity: 0; transition: all 0.25s; letter-spacing: 0.5px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  @media (max-width: 860px) {
+    .main { grid-template-columns: 1fr; height: auto; }
+    .detail-panel { min-height: 500px; border-top: 1px solid var(--border); }
+    .stats-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Buzz Fly <span>// Container Control</span></div>
+  <div class="stats-bar">
+    <div class="stat"><div class="sdot" style="background:var(--border)"></div>Total <strong>17</strong></div>
+    <div class="stat"><div class="sdot" style="background:var(--green2)"></div>Ocupados <strong id="stat-occ">0</strong></div>
+    <div class="stat"><div class="sdot" style="background:var(--text3)"></div>Vagos <strong id="stat-vag">17</strong></div>
+    <div class="stat">Pallets <strong id="stat-pal">0</strong></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="plant-panel">
+    <div class="section-label">Vista aérea — planta baixa</div>
+    <div class="aerial">
+      <div class="aerial-top">↑ frente do galpão</div>
+      <div class="containers-aerial">
+        <div class="dir-label">← C17</div>
+        <div id="aerial-row" style="display:flex;gap:3px;flex:1;justify-content:center;"></div>
+        <div class="dir-label">C01 →</div>
+      </div>
+    </div>
+    <div class="section-label">Todos os containers</div>
+    <div class="grid-list" id="grid-list"></div>
+  </div>
+
+  <div class="detail-panel">
+    <div class="detail-none" id="detail-none">
+      <div style="font-size:28px;opacity:0.2;">⬅</div>
+      <p>selecione um container</p>
+    </div>
+    <div class="detail-content" id="detail-content">
+      <div class="detail-header">
+        <div class="dh-top">
+          <div class="dh-num" id="dh-num">C01</div>
+          <button class="btn-close" onclick="fecharDetalhe()">✕</button>
+        </div>
+        <div class="dh-sub" id="dh-sub">sem lote registrado</div>
+      </div>
+
+      <div class="detail-body">
+        <div>
+          <div class="fl">Lote</div>
+          <input class="fi" id="input-lote" type="text" placeholder="Ex: LT-2025-042" />
+        </div>
+        <div class="fr2">
+          <div>
+            <div class="fl">Data entrada</div>
+            <input class="fi" id="input-data" type="date" />
+          </div>
+          <div>
+            <div class="fl">Fase</div>
+            <select class="fs" id="input-fase">
+              <option value="">— selecione —</option>
+              <option value="Maternidade">Maternidade</option>
+              <option value="Produção">Produção</option>
+              <option value="Colônia">Colônia</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- APPLY ALL -->
+        <div class="apply-all-box">
+          <div class="apply-all-title">Aplicar para todas as vagas</div>
+          <div style="font-size:11px;color:#a08040;font-family:var(--mono);margin-bottom:8px;">Preenche as 8 vagas com o lote e data acima</div>
+          <button class="btn-apply-all" onclick="aplicarTodas()">Aplicar lote/data em todas as 8 vagas</button>
+        </div>
+
+        <!-- SLOTS -->
+        <div class="slots-section">
+          <div class="slots-header">
+            <div class="slots-title">Vagas (pallets)</div>
+            <div class="slots-count" id="slots-count">0 / 8</div>
+          </div>
+          <div class="floorplan-wrap">
+            <div class="fp-door">
+              <div class="fp-door-label">PORTA</div>
+              <div class="fp-door-icon"></div>
+            </div>
+            <div class="fp-arrow">→</div>
+            <div class="fp-grid" id="fp-grid"></div>
+          </div>
+          <div class="fp-hint">clique na vaga para registrar / liberar</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-p" onclick="salvar()">Salvar container</button>
+          <button class="btn-g" onclick="limpar()">Limpar tudo</button>
+        </div>
+      </div>
+      <div class="ts-label" id="ts-label"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLOT MODAL -->
+<div class="modal-wrap" id="slot-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Vaga 01</div>
+    <div>
+      <div class="fl">Lote / identificação</div>
+      <input class="fi" id="slot-input" type="text" placeholder="Ex: LT-042 / Bandeja A" />
+    </div>
+    <div class="modal-btns">
+      <button class="mb-p" onclick="salvarSlot()">Confirmar</button>
+      <button class="mb-g" onclick="fecharModal()">Cancelar</button>
+      <button class="mb-r" onclick="limparSlot()">Liberar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'buzzfly_v3';
+// slot order: col-major, 2 rows x 4 cols
+// slot index -> display position: slot 0=vaga01(row0,col0), slot1=vaga02(row1,col0), slot2=vaga03(row0,col1)...
+// grid-template: row1: slots 0,2,4,6 | row2: slots 1,3,5,7
+// We store slots[0..7] where slot 0=vaga01, 1=vaga02, 2=vaga03... col-major
+// Grid placement: vaga1=row1col1, vaga2=row2col1, vaga3=row1col2, vaga4=row2col2 etc
+
+let dados = JSON.parse(localStorage.getItem(KEY) || '{}');
+let sel = null, slotAtivo = null;
+
+for (let i = 1; i <= 17; i++) {
+  if (!dados[i]) dados[i] = { lote:'', data:'', fase:'', slots: Array(8).fill(''), ts:'' };
+  if (!dados[i].slots) dados[i].slots = Array(8).fill('');
+}
+
+function saveLS() { localStorage.setItem(KEY, JSON.stringify(dados)); }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function slotsFilled(n) { return dados[n].slots.filter(s=>s).length; }
+function isOcc(n) { return !!(dados[n].lote || dados[n].fase); }
+
+function getStats() {
+  let occ=0, pal=0;
+  for(let i=1;i<=17;i++){ if(isOcc(i)) occ++; pal+=slotsFilled(i); }
+  return {occ, pal, vag:17-occ};
+}
+function updateStats() {
+  const s=getStats();
+  document.getElementById('stat-occ').textContent=s.occ;
+  document.getElementById('stat-vag').textContent=s.vag;
+  document.getElementById('stat-pal').textContent=s.pal;
+}
+
+// slot index to vaga number (col-major): idx 0->V01, 1->V02, 2->V03...
+// grid position: row = idx%2, col = floor(idx/2)
+function renderFP() {
+  if(sel===null) return;
+  const grid = document.getElementById('fp-grid');
+  grid.innerHTML='';
+  const d = dados[sel];
+  let count=0;
+  // place 8 slots in 2x4 grid, col-major: slot0->row0col0, slot1->row1col0, slot2->row0col1...
+  for(let idx=0;idx<8;idx++) {
+    const vagaNum = idx+1;
+    const row = idx%2; // 0 or 1
+    const col = Math.floor(idx/2); // 0..3
+    const filled = !!d.slots[idx];
+    if(filled) count++;
+    const btn = document.createElement('div');
+    btn.className = 'slot-btn' + (filled?' sf':'');
+    btn.style.gridRow = (row+1);
+    btn.style.gridColumn = (col+1);
+    btn.onclick = () => abrirSlotModal(idx);
+    btn.innerHTML = `<div class="sn">0${vagaNum}</div><div class="si"></div>${filled?`<div class="sl">${d.slots[idx]}</div>`:''}`;
+    grid.appendChild(btn);
+  }
+  document.getElementById('slots-count').textContent = `${count} / 8`;
+}
+
+function renderAerial() {
+  const row = document.getElementById('aerial-row');
+  row.innerHTML='';
+  for(let n=17;n>=1;n--) {
+    const occ=isOcc(n), filled=slotsFilled(n);
+    const el=document.createElement('div');
+    el.className='ct-aerial'+(occ?' occupied':'')+(sel===n?' selected':'');
+    el.onclick=()=>abrirContainer(n);
+    let sh='';
+    // 8 slots displayed as 2 cols x 4 rows in aerial (rotated view)
+    for(let s=0;s<8;s++) sh+=`<div class="slot-a ${dados[n].slots[s]?'f':''}"></div>`;
+    el.innerHTML=`<div class="ct-sdot"></div><div class="ct-slots-aerial">${sh}</div><div class="ct-num-aerial">C${String(n).padStart(2,'0')}</div>`;
+    row.appendChild(el);
+  }
+}
+
+function renderGrid() {
+  const grid=document.getElementById('grid-list');
+  grid.innerHTML='';
+  for(let n=17;n>=1;n--) {
+    const d=dados[n], occ=isOcc(n), filled=slotsFilled(n);
+    const el=document.createElement('div');
+    el.className='ct-card'+(occ?' occupied':'')+(sel===n?' selected':'');
+    el.onclick=()=>abrirContainer(n);
+    let ms='';
+    for(let s=0;s<8;s++) ms+=`<div class="ms ${d.slots[s]?'f':''}"></div>`;
+    el.innerHTML=`
+      <div class="ct-card-header">
+        <div class="ct-card-num">C${String(n).padStart(2,'0')}</div>
+        <div class="ct-badge ${occ?'b-occ':'b-empty'}">${occ?d.fase||'ativo':'vago'}</div>
+      </div>
+      <div class="mini-slots">${ms}</div>
+      ${d.lote?`<div class="ct-lote-text">${d.lote}</div>`:''}
+      ${filled>0?`<div style="font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:2px;">${filled}/8 pallets</div>`:''}
+    `;
+    grid.appendChild(el);
+  }
+}
+
+function abrirContainer(n) {
+  sel=n;
+  const d=dados[n];
+  document.getElementById('detail-none').style.display='none';
+  document.getElementById('detail-content').classList.add('open');
+  document.getElementById('dh-num').textContent=`C${String(n).padStart(2,'0')}`;
+  document.getElementById('dh-sub').textContent=d.lote?`Lote: ${d.lote}`:'sem lote registrado';
+  document.getElementById('input-lote').value=d.lote||'';
+  document.getElementById('input-data').value=d.data||'';
+  document.getElementById('input-fase').value=d.fase||'';
+  document.getElementById('ts-label').textContent=d.ts?`Última edição: ${d.ts}`:'';
+  renderFP(); renderAerial(); renderGrid();
+}
+
+function fecharDetalhe() {
+  sel=null;
+  document.getElementById('detail-none').style.display='flex';
+  document.getElementById('detail-content').classList.remove('open');
+  renderAerial(); renderGrid();
+}
+
+function salvar() {
+  if(sel===null) return;
+  const ts=new Date().toLocaleString('pt-BR');
+  dados[sel].lote=document.getElementById('input-lote').value.trim();
+  dados[sel].data=document.getElementById('input-data').value;
+  dados[sel].fase=document.getElementById('input-fase').value;
+  dados[sel].ts=ts;
+  saveLS();
+  document.getElementById('dh-sub').textContent=dados[sel].lote?`Lote: ${dados[sel].lote}`:'sem lote registrado';
+  document.getElementById('ts-label').textContent=`Última edição: ${ts}`;
+  renderAerial(); renderGrid(); updateStats();
+  toast('Container salvo');
+}
+
+function limpar() {
+  if(sel===null) return;
+  dados[sel]={lote:'',data:'',fase:'',slots:Array(8).fill(''),ts:''};
+  saveLS(); abrirContainer(sel); updateStats();
+  toast('Container limpo');
+}
+
+function aplicarTodas() {
+  if(sel===null) return;
+  const lote=document.getElementById('input-lote').value.trim();
+  const data=document.getElementById('input-data').value;
+  if(!lote) { toast('Informe o lote antes de aplicar'); return; }
+  for(let i=0;i<8;i++) dados[sel].slots[i]=lote;
+  dados[sel].lote=lote;
+  dados[sel].data=data;
+  dados[sel].fase=document.getElementById('input-fase').value;
+  const ts=new Date().toLocaleString('pt-BR');
+  dados[sel].ts=ts;
+  saveLS();
+  document.getElementById('dh-sub').textContent=`Lote: ${lote}`;
+  document.getElementById('ts-label').textContent=`Última edição: ${ts}`;
+  renderFP(); renderAerial(); renderGrid(); updateStats();
+  toast('Lote aplicado em todas as 8 vagas');
+}
+
+function abrirSlotModal(idx) {
+  slotAtivo=idx;
+  document.getElementById('modal-title').textContent=`C${String(sel).padStart(2,'0')} — Vaga 0${idx+1}`;
+  document.getElementById('slot-input').value=dados[sel].slots[idx]||'';
+  document.getElementById('slot-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('slot-input').focus(),50);
+}
+function fecharModal() { document.getElementById('slot-modal').classList.remove('open'); slotAtivo=null; }
+function salvarSlot() {
+  if(sel===null||slotAtivo===null) return;
+  dados[sel].slots[slotAtivo]=document.getElementById('slot-input').value.trim();
+  saveLS(); fecharModal(); renderFP(); renderAerial(); renderGrid(); updateStats();
+  toast('Vaga atualizada');
+}
+function limparSlot() {
+  if(sel===null||slotAtivo===null) return;
+  dados[sel].slots[slotAtivo]='';
+  saveLS(); fecharModal(); renderFP(); renderAerial(); renderGrid(); updateStats();
+  toast('Vaga liberada');
+}
+
+document.getElementById('slot-modal').addEventListener('click', function(e){ if(e.target===this) fecharModal(); });
+document.getElementById('slot-input').addEventListener('keydown', e=>{ if(e.key==='Enter') salvarSlot(); });
+
+renderAerial(); renderGrid(); updateStats();
+</script>
+</body>
+</html>
