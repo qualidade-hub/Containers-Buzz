@@ -1,226 +1,232 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buzz Fly - Controle de Containers</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
+  :root[data-theme="dark"] {
     --bg: #0f1410; --bg2: #161d17; --bg3: #1e2820;
     --border: #2a3a2c; --border2: #3a5040;
     --green: #4ade80; --green2: #22c55e; --green-dim: #1a4a2a;
-    --amber: #fbbf24; --amber-dim: #4a3a10;
+    --amber: #fbbf24; --amber-dim: #4a3a10; --amber-text: #a08040;
     --red: #f87171; --red-dim: #4a1a1a;
     --text: #e8f0e9; --text2: #8fa892; --text3: #4a6050;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'IBM Plex Sans', sans-serif;
+    --modal-bg: rgba(0,0,0,0.65);
+    --save-btn-bg: #1a3a20; --save-btn-border: #2a6030; --save-btn-text: #4ade80;
+    --save-btn-hover: #1e4a24;
   }
+  :root[data-theme="light"] {
+    --bg: #f4f7f4; --bg2: #ffffff; --bg3: #eaf0ea;
+    --border: #c8d8c8; --border2: #7aaa7a;
+    --green: #16a34a; --green2: #22c55e; --green-dim: #dcfce7;
+    --amber: #d97706; --amber-dim: #fef3c7; --amber-text: #92400e;
+    --red: #dc2626; --red-dim: #fee2e2;
+    --text: #1a2e1a; --text2: #4a6a4a; --text3: #7a9a7a;
+    --modal-bg: rgba(0,0,0,0.4);
+    --save-btn-bg: #dcfce7; --save-btn-border: #22c55e; --save-btn-text: #15803d;
+    --save-btn-hover: #bbf7d0;
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; transition: background 0.2s, color 0.2s; }
 
   .topbar {
     background: var(--bg2); border-bottom: 1px solid var(--border);
-    padding: 13px 24px; display: flex; align-items: center;
+    padding: 13px 20px; display: flex; align-items: center;
     justify-content: space-between; position: sticky; top: 0; z-index: 100;
+    gap: 10px; flex-wrap: wrap;
   }
-  .logo { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--green); letter-spacing: 2px; }
+  .logo { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; color: var(--green); letter-spacing: 2px; white-space: nowrap; }
   .logo span { color: var(--text3); font-weight: 400; }
-  .stats-bar { display: flex; gap: 20px; }
-  .stat { font-family: var(--mono); font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 6px; }
-  .stat strong { color: var(--text); font-size: 14px; font-weight: 500; }
-  .sdot { width: 6px; height: 6px; border-radius: 50%; }
 
-  .main { display: grid; grid-template-columns: 1fr 380px; height: calc(100vh - 50px); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .stats-bar { display: flex; gap: 16px; }
+  .stat { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 6px; }
+  .stat strong { color: var(--text); font-size: 15px; font-weight: 500; }
+  .sdot { width: 7px; height: 7px; border-radius: 50%; }
+
+  .btn-save-top {
+    background: var(--save-btn-bg); color: var(--save-btn-text);
+    border: 1px solid var(--save-btn-border);
+    border-radius: 6px; padding: 9px 18px;
+    font-size: 13px; font-family: 'IBM Plex Mono', monospace; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+  .btn-save-top:hover { background: var(--save-btn-hover); }
+  .btn-save-top:active { transform: scale(0.97); }
+
+  .btn-theme {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; padding: 9px 14px; font-size: 15px;
+    cursor: pointer; transition: all 0.15s; line-height: 1;
+  }
+  .btn-theme:hover { border-color: var(--border2); }
+
+  .main { display: grid; grid-template-columns: 1fr 400px; height: calc(100vh - 54px); }
 
   .plant-panel { padding: 20px 24px; overflow-y: auto; border-right: 1px solid var(--border); }
 
   .section-label {
-    font-family: var(--mono); font-size: 10px; color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3);
     letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px;
     display: flex; align-items: center; gap: 10px;
   }
   .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-  .aerial {
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 8px; padding: 16px 12px 12px; margin-bottom: 24px;
-  }
-  .aerial-top { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 2px; text-align: center; margin-bottom: 12px; }
+  .aerial { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 16px 12px 12px; margin-bottom: 24px; }
+  .aerial-top { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 2px; text-align: center; margin-bottom: 12px; }
   .containers-aerial { display: flex; gap: 3px; align-items: stretch; justify-content: center; }
-  .dir-label { font-family: var(--mono); font-size: 9px; color: var(--text3); writing-mode: vertical-lr; transform: rotate(180deg); letter-spacing: 1px; align-self: center; padding: 0 4px; }
+  .dir-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text3); writing-mode: vertical-lr; transform: rotate(180deg); letter-spacing: 1px; align-self: center; padding: 0 4px; }
 
   .ct-aerial {
     flex: 1; max-width: 42px; min-height: 100px;
     background: var(--bg2); border: 1px solid var(--border2);
     border-radius: 3px; cursor: pointer;
     display: flex; flex-direction: column; align-items: center;
-    justify-content: space-between; padding: 5px 3px 4px;
-    transition: all 0.15s;
+    justify-content: space-between; padding: 5px 3px 4px; transition: all 0.15s;
   }
-  .ct-aerial:hover { border-color: var(--green2); background: #1a2e1c; }
-  .ct-aerial.selected { border-color: var(--green); background: #1a2e1c; box-shadow: 0 0 0 1px var(--green); }
-  .ct-aerial.occupied { border-color: var(--green-dim); background: #142014; }
-  .ct-aerial.occupied.selected { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
-  .ct-num-aerial { font-family: var(--mono); font-size: 8px; font-weight: 600; color: var(--text2); writing-mode: vertical-lr; transform: rotate(180deg); }
+  .ct-aerial:hover { border-color: var(--green2); }
+  .ct-aerial.selected { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+  .ct-aerial.occupied { background: var(--green-dim); }
+  .ct-num-aerial { font-family: 'IBM Plex Mono', monospace; font-size: 8px; font-weight: 600; color: var(--text2); writing-mode: vertical-lr; transform: rotate(180deg); }
   .ct-aerial.selected .ct-num-aerial { color: var(--green); }
   .ct-slots-aerial { display: flex; flex-direction: column; gap: 2px; width: 100%; align-items: center; }
-  .slot-a { width: 78%; height: 7px; border-radius: 1px; background: var(--bg3); border: 0.5px solid var(--border); }
-  .slot-a.f { background: var(--green-dim); border-color: var(--green2); }
+  .slot-a { width: 78%; height: 7px; border-radius: 1px; background: var(--bg); border: 0.5px solid var(--border); }
+  .slot-a.f { background: var(--green2); opacity: 0.5; border-color: var(--green); }
   .ct-sdot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); }
   .ct-aerial.occupied .ct-sdot { background: var(--green2); }
 
-  .grid-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 7px; }
-  .ct-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 6px; padding: 9px 10px 8px; cursor: pointer; transition: all 0.15s;
-  }
+  .grid-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 8px; }
+  .ct-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 11px 9px; cursor: pointer; transition: all 0.15s; }
   .ct-card:hover { border-color: var(--border2); background: var(--bg3); }
   .ct-card.selected { border-color: var(--green); }
-  .ct-card.occupied { border-color: var(--green-dim); }
+  .ct-card.occupied { border-left: 3px solid var(--green2); }
   .ct-card.occupied.selected { border-color: var(--green); }
-  .ct-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .ct-card-num { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); }
+  .ct-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+  .ct-card-num { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: var(--text); }
   .ct-card.selected .ct-card-num { color: var(--green); }
-  .ct-badge { font-size: 9px; font-family: var(--mono); padding: 2px 5px; border-radius: 2px; }
+  .ct-badge { font-size: 10px; font-family: 'IBM Plex Mono', monospace; padding: 2px 6px; border-radius: 3px; }
   .b-empty { background: var(--bg3); color: var(--text3); }
-  .b-occ { background: var(--green-dim); color: var(--green2); }
+  .b-occ { background: var(--green-dim); color: var(--green); }
   .mini-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 3px; }
-  .ms { height: 6px; border-radius: 1px; background: var(--bg3); border: 0.5px solid var(--border); }
-  .ms.f { background: var(--green-dim); border-color: var(--green2); }
-  .ct-lote-text { font-size: 10px; color: var(--text2); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--mono); }
+  .ms { height: 7px; border-radius: 1px; background: var(--bg3); border: 0.5px solid var(--border); }
+  .ms.f { background: var(--green2); opacity: 0.6; }
+  .ct-lote-text { font-size: 11px; color: var(--text2); margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'IBM Plex Mono', monospace; }
 
-  /* DETAIL PANEL */
+  /* DETAIL */
   .detail-panel { background: var(--bg2); display: flex; flex-direction: column; overflow-y: auto; }
-  .detail-none { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--text3); }
-  .detail-none p { font-size: 13px; font-family: var(--mono); }
+  .detail-none { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; color: var(--text3); }
+  .detail-none p { font-size: 14px; font-family: 'IBM Plex Mono', monospace; }
   .detail-content { display: none; flex-direction: column; flex: 1; }
   .detail-content.open { display: flex; }
 
-  .detail-header { padding: 16px 20px 13px; border-bottom: 1px solid var(--border); background: var(--bg3); }
+  .detail-header { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); background: var(--bg3); }
   .dh-top { display: flex; align-items: center; justify-content: space-between; }
-  .dh-num { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--green); }
-  .dh-sub { font-family: var(--mono); font-size: 11px; color: var(--text2); margin-top: 2px; }
-  .btn-close { background: none; border: 1px solid var(--border); color: var(--text2); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .dh-num { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; color: var(--green); }
+  .dh-sub { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .btn-close { background: none; border: 1px solid var(--border); color: var(--text2); width: 30px; height: 30px; border-radius: 5px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
   .btn-close:hover { border-color: var(--red); color: var(--red); }
 
-  .detail-body { padding: 14px 20px; flex: 1; display: flex; flex-direction: column; gap: 13px; }
+  .detail-body { padding: 16px 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
 
-  .fl { font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .fl { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
   .fi, .fs {
     width: 100%; background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 5px; padding: 8px 10px; font-size: 13px;
-    font-family: var(--sans); color: var(--text); outline: none;
+    border-radius: 6px; padding: 10px 12px; font-size: 14px;
+    font-family: 'IBM Plex Sans', sans-serif; color: var(--text); outline: none;
     transition: border-color 0.15s; appearance: none;
   }
   .fi:focus, .fs:focus { border-color: var(--green2); }
-  .fs { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a6050' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; cursor: pointer; }
-  .fs option { background: var(--bg3); }
+  .fs { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a6050' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+  .fs option { background: var(--bg3); color: var(--text); }
   .fr2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-  /* APPLY ALL BANNER */
-  .apply-all-box {
-    background: var(--amber-dim); border: 1px solid #6a5020;
-    border-radius: 6px; padding: 11px 12px;
-  }
-  .apply-all-title { font-family: var(--mono); font-size: 10px; color: var(--amber); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-  .apply-all-title::before { content: '⚡'; font-size: 11px; }
-  .btn-apply-all {
-    width: 100%; background: var(--amber); color: #1a0f00;
-    border: none; border-radius: 5px; padding: 9px;
-    font-size: 12px; font-family: var(--mono); font-weight: 600;
-    cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px;
-  }
-  .btn-apply-all:hover { background: #fcd34d; }
+  .apply-all-box { background: var(--amber-dim); border: 1px solid var(--border2); border-radius: 6px; padding: 12px 13px; }
+  .apply-all-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--amber); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .apply-all-hint { font-size: 12px; color: var(--amber-text); font-family: 'IBM Plex Mono', monospace; margin-bottom: 9px; }
+  .btn-apply-all { width: 100%; background: var(--amber); color: #1a0f00; border: none; border-radius: 5px; padding: 10px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px; }
+  .btn-apply-all:hover { opacity: 0.9; }
 
-  /* SLOTS FLOOR PLAN */
-  .slots-section { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 11px; }
+  .slots-section { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
   .slots-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .slots-title { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
-  .slots-count { font-size: 11px; color: var(--green2); font-family: var(--mono); font-weight: 500; }
+  .slots-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+  .slots-count { font-size: 13px; color: var(--green2); font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
 
-  /* Container floor plan with door */
-  .floorplan-wrap {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 4px; padding: 8px; display: flex; gap: 6px; align-items: stretch;
-  }
-  .fp-door {
-    width: 22px; flex-shrink: 0;
-    background: var(--bg3); border: 1px solid var(--border2);
-    border-radius: 3px; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 4px;
-  }
-  .fp-door-label { font-family: var(--mono); font-size: 7px; color: var(--green2); writing-mode: vertical-lr; transform: rotate(180deg); letter-spacing: 1px; }
-  .fp-door-icon { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--green2); }
-  .fp-arrow { font-size: 10px; color: var(--green); align-self: center; flex-shrink: 0; }
-  .fp-grid {
-    flex: 1; display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 5px;
-  }
+  .floorplan-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 8px; display: flex; gap: 7px; align-items: stretch; }
+  .fp-door { width: 24px; flex-shrink: 0; background: var(--bg3); border: 1px solid var(--border2); border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+  .fp-door-label { font-family: 'IBM Plex Mono', monospace; font-size: 7px; color: var(--green2); writing-mode: vertical-lr; transform: rotate(180deg); letter-spacing: 1px; }
+  .fp-door-icon { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--green2); }
+  .fp-arrow { font-size: 12px; color: var(--green); align-self: center; flex-shrink: 0; }
+  .fp-grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 6px; }
 
-  .slot-btn {
-    aspect-ratio: 1.2; background: var(--bg2);
-    border: 1px solid var(--border); border-radius: 4px;
-    cursor: pointer; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 2px;
-    transition: all 0.15s; padding: 3px;
-  }
-  .slot-btn:hover { border-color: var(--border2); background: var(--bg); }
+  .slot-btn { aspect-ratio: 1.2; background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: all 0.15s; padding: 3px; }
+  .slot-btn:hover { border-color: var(--border2); }
   .slot-btn.sf { background: var(--green-dim); border-color: var(--green2); }
-  .slot-btn.sf:hover { background: #1a4a20; border-color: var(--green); }
-  .sn { font-family: var(--mono); font-size: 9px; font-weight: 600; color: var(--text3); }
+  .slot-btn.sf:hover { border-color: var(--green); }
+  .sn { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text3); }
   .slot-btn.sf .sn { color: var(--green2); }
-  .si { width: 18px; height: 12px; border: 1px solid var(--border); border-radius: 2px; background: var(--bg3); }
-  .slot-btn.sf .si { background: #1D9E75; opacity: 0.5; border-color: var(--green2); }
-  .sl { font-size: 7px; font-family: var(--mono); color: var(--green2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
-
-  .fp-hint { font-size: 10px; font-family: var(--mono); color: var(--text3); text-align: center; margin-top: 7px; }
+  .si { width: 20px; height: 13px; border: 1px solid var(--border); border-radius: 2px; background: var(--bg3); }
+  .slot-btn.sf .si { background: var(--green2); opacity: 0.4; border-color: var(--green); }
+  .sl { font-size: 8px; font-family: 'IBM Plex Mono', monospace; color: var(--green2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; }
+  .fp-hint { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text3); text-align: center; margin-top: 8px; }
 
   .btn-row { display: flex; gap: 8px; }
-  .btn-p { background: var(--green2); color: #0a1a0c; border: none; border-radius: 5px; padding: 10px 16px; font-size: 13px; font-family: var(--sans); font-weight: 600; cursor: pointer; transition: all 0.15s; flex: 1; }
+  .btn-p { background: var(--green2); color: #0a1a0c; border: none; border-radius: 6px; padding: 12px 16px; font-size: 14px; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.15s; flex: 1; }
   .btn-p:hover { background: var(--green); }
-  .btn-g { background: transparent; color: var(--text2); border: 1px solid var(--border); border-radius: 5px; padding: 10px 14px; font-size: 13px; font-family: var(--sans); cursor: pointer; transition: all 0.15s; flex: 0.6; }
+  .btn-g { background: transparent; color: var(--text2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; font-size: 14px; font-family: 'IBM Plex Sans', sans-serif; cursor: pointer; transition: all 0.15s; flex: 0.6; }
   .btn-g:hover { border-color: var(--red); color: var(--red); }
 
-  .ts-label { font-family: var(--mono); font-size: 10px; color: var(--text3); padding: 8px 20px; border-top: 1px solid var(--border); margin-top: auto; }
+  .ts-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); padding: 10px 20px; border-top: 1px solid var(--border); margin-top: auto; }
 
-  /* SLOT MODAL */
-  .modal-wrap { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: center; justify-content: center; }
+  /* MODAL */
+  .modal-wrap { display: none; position: fixed; inset: 0; background: var(--modal-bg); z-index: 200; align-items: center; justify-content: center; }
   .modal-wrap.open { display: flex; }
-  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 20px; width: 290px; }
-  .modal-title { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--green); margin-bottom: 14px; }
-  .modal-btns { display: flex; gap: 7px; margin-top: 12px; }
-  .mb-p { background: var(--green2); color: #0a1a0c; border: none; border-radius: 5px; padding: 9px 14px; font-size: 12px; font-family: var(--mono); font-weight: 600; cursor: pointer; flex: 1; }
+  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 22px; width: 310px; }
+  .modal-title { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; color: var(--green); margin-bottom: 14px; }
+  .modal-btns { display: flex; gap: 8px; margin-top: 14px; }
+  .mb-p { background: var(--green2); color: #0a1a0c; border: none; border-radius: 5px; padding: 10px 14px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; cursor: pointer; flex: 1; }
   .mb-p:hover { background: var(--green); }
-  .mb-g { background: transparent; color: var(--text3); border: 1px solid var(--border); border-radius: 4px; padding: 9px 10px; font-size: 11px; font-family: var(--mono); cursor: pointer; }
-  .mb-g:hover { border-color: var(--border2); color: var(--text2); }
-  .mb-r { background: transparent; color: var(--red); border: 1px solid var(--red-dim); border-radius: 4px; padding: 9px 10px; font-size: 11px; font-family: var(--mono); cursor: pointer; }
+  .mb-g { background: transparent; color: var(--text3); border: 1px solid var(--border); border-radius: 5px; padding: 10px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; cursor: pointer; }
+  .mb-g:hover { color: var(--text2); border-color: var(--border2); }
+  .mb-r { background: transparent; color: var(--red); border: 1px solid var(--red-dim); border-radius: 5px; padding: 10px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; cursor: pointer; }
 
-  .toast { position: fixed; bottom: 22px; right: 22px; background: var(--green2); color: #0a1a0c; font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 10px 18px; border-radius: 5px; z-index: 300; transform: translateY(60px); opacity: 0; transition: all 0.25s; letter-spacing: 0.5px; }
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--green2); color: #0a1a0c; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; padding: 12px 20px; border-radius: 6px; z-index: 300; transform: translateY(70px); opacity: 0; transition: all 0.25s; letter-spacing: 0.5px; }
   .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.warn { background: var(--amber); }
 
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-  @media (max-width: 860px) {
+  @media (max-width: 900px) {
     .main { grid-template-columns: 1fr; height: auto; }
     .detail-panel { min-height: 500px; border-top: 1px solid var(--border); }
     .stats-bar { display: none; }
+    .fi, .fs { font-size: 16px; padding: 12px; }
+    .btn-p, .btn-g { font-size: 16px; padding: 14px; }
+    .slot-btn { aspect-ratio: 1; }
+    .sn { font-size: 12px; }
   }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="logo">Buzz Fly <span>// Container Control</span></div>
-  <div class="stats-bar">
-    <div class="stat"><div class="sdot" style="background:var(--border)"></div>Total <strong>17</strong></div>
-    <div class="stat"><div class="sdot" style="background:var(--green2)"></div>Ocupados <strong id="stat-occ">0</strong></div>
-    <div class="stat"><div class="sdot" style="background:var(--text3)"></div>Vagos <strong id="stat-vag">17</strong></div>
-    <div class="stat">Pallets <strong id="stat-pal">0</strong></div>
+  <div class="logo">Buzz Fly <span>// Containers</span></div>
+  <div class="topbar-right">
+    <div class="stats-bar">
+      <div class="stat"><div class="sdot" style="background:var(--border)"></div>Total <strong>17</strong></div>
+      <div class="stat"><div class="sdot" style="background:var(--green2)"></div>Ocupados <strong id="stat-occ">0</strong></div>
+      <div class="stat"><div class="sdot" style="background:var(--text3)"></div>Vagos <strong id="stat-vag">17</strong></div>
+      <div class="stat">Pallets <strong id="stat-pal">0</strong></div>
+    </div>
+    <button class="btn-save-top" onclick="salvarTudo()" id="btn-save-top">Salvar alterações</button>
+    <button class="btn-theme" onclick="toggleTheme()" id="btn-theme" title="Alternar tema">🌙</button>
   </div>
 </div>
 
@@ -241,7 +247,7 @@
 
   <div class="detail-panel">
     <div class="detail-none" id="detail-none">
-      <div style="font-size:28px;opacity:0.2;">⬅</div>
+      <div style="font-size:32px;opacity:0.2;">⬅</div>
       <p>selecione um container</p>
     </div>
     <div class="detail-content" id="detail-content">
@@ -252,7 +258,6 @@
         </div>
         <div class="dh-sub" id="dh-sub">sem lote registrado</div>
       </div>
-
       <div class="detail-body">
         <div>
           <div class="fl">Lote</div>
@@ -274,14 +279,12 @@
           </div>
         </div>
 
-        <!-- APPLY ALL -->
         <div class="apply-all-box">
-          <div class="apply-all-title">Aplicar para todas as vagas</div>
-          <div style="font-size:11px;color:#a08040;font-family:var(--mono);margin-bottom:8px;">Preenche as 8 vagas com o lote e data acima</div>
+          <div class="apply-all-title">⚡ Aplicar para todas as vagas</div>
+          <div class="apply-all-hint">Preenche as 8 vagas com o lote e data acima</div>
           <button class="btn-apply-all" onclick="aplicarTodas()">Aplicar lote/data em todas as 8 vagas</button>
         </div>
 
-        <!-- SLOTS -->
         <div class="slots-section">
           <div class="slots-header">
             <div class="slots-title">Vagas (pallets)</div>
@@ -328,27 +331,57 @@
 
 <script>
 const KEY = 'buzzfly_v3';
-// slot order: col-major, 2 rows x 4 cols
-// slot index -> display position: slot 0=vaga01(row0,col0), slot1=vaga02(row1,col0), slot2=vaga03(row0,col1)...
-// grid-template: row1: slots 0,2,4,6 | row2: slots 1,3,5,7
-// We store slots[0..7] where slot 0=vaga01, 1=vaga02, 2=vaga03... col-major
-// Grid placement: vaga1=row1col1, vaga2=row2col1, vaga3=row1col2, vaga4=row2col2 etc
-
 let dados = JSON.parse(localStorage.getItem(KEY) || '{}');
 let sel = null, slotAtivo = null;
+let alteracoesPendentes = false;
 
 for (let i = 1; i <= 17; i++) {
   if (!dados[i]) dados[i] = { lote:'', data:'', fase:'', slots: Array(8).fill(''), ts:'' };
   if (!dados[i].slots) dados[i].slots = Array(8).fill('');
 }
 
+// THEME
+const html = document.documentElement;
+const savedTheme = localStorage.getItem('buzzfly_theme') || 'dark';
+html.setAttribute('data-theme', savedTheme);
+document.getElementById('btn-theme').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+function toggleTheme() {
+  const cur = html.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('buzzfly_theme', next);
+  document.getElementById('btn-theme').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
 function saveLS() { localStorage.setItem(KEY, JSON.stringify(dados)); }
 
-function toast(msg) {
+function marcarPendente() {
+  alteracoesPendentes = true;
+  document.getElementById('btn-save-top').textContent = '● Salvar alterações';
+  document.getElementById('btn-save-top').style.borderColor = 'var(--amber)';
+  document.getElementById('btn-save-top').style.color = 'var(--amber)';
+}
+
+function limparPendente() {
+  alteracoesPendentes = false;
+  document.getElementById('btn-save-top').textContent = 'Salvar alterações';
+  document.getElementById('btn-save-top').style.borderColor = '';
+  document.getElementById('btn-save-top').style.color = '';
+}
+
+function toast(msg, warn) {
   const t = document.getElementById('toast');
   t.textContent = msg;
+  t.className = 'toast' + (warn ? ' warn' : '');
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2000);
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function salvarTudo() {
+  saveLS();
+  limparPendente();
+  toast('Todas as alterações salvas');
 }
 
 function slotsFilled(n) { return dados[n].slots.filter(s=>s).length; }
@@ -366,19 +399,15 @@ function updateStats() {
   document.getElementById('stat-pal').textContent=s.pal;
 }
 
-// slot index to vaga number (col-major): idx 0->V01, 1->V02, 2->V03...
-// grid position: row = idx%2, col = floor(idx/2)
 function renderFP() {
   if(sel===null) return;
   const grid = document.getElementById('fp-grid');
   grid.innerHTML='';
   const d = dados[sel];
   let count=0;
-  // place 8 slots in 2x4 grid, col-major: slot0->row0col0, slot1->row1col0, slot2->row0col1...
   for(let idx=0;idx<8;idx++) {
-    const vagaNum = idx+1;
-    const row = idx%2; // 0 or 1
-    const col = Math.floor(idx/2); // 0..3
+    const row = idx%2;
+    const col = Math.floor(idx/2);
     const filled = !!d.slots[idx];
     if(filled) count++;
     const btn = document.createElement('div');
@@ -386,7 +415,7 @@ function renderFP() {
     btn.style.gridRow = (row+1);
     btn.style.gridColumn = (col+1);
     btn.onclick = () => abrirSlotModal(idx);
-    btn.innerHTML = `<div class="sn">0${vagaNum}</div><div class="si"></div>${filled?`<div class="sl">${d.slots[idx]}</div>`:''}`;
+    btn.innerHTML = `<div class="sn">0${idx+1}</div><div class="si"></div>${filled?`<div class="sl">${d.slots[idx]}</div>`:''}`;
     grid.appendChild(btn);
   }
   document.getElementById('slots-count').textContent = `${count} / 8`;
@@ -396,12 +425,11 @@ function renderAerial() {
   const row = document.getElementById('aerial-row');
   row.innerHTML='';
   for(let n=17;n>=1;n--) {
-    const occ=isOcc(n), filled=slotsFilled(n);
+    const occ=isOcc(n);
     const el=document.createElement('div');
     el.className='ct-aerial'+(occ?' occupied':'')+(sel===n?' selected':'');
     el.onclick=()=>abrirContainer(n);
     let sh='';
-    // 8 slots displayed as 2 cols x 4 rows in aerial (rotated view)
     for(let s=0;s<8;s++) sh+=`<div class="slot-a ${dados[n].slots[s]?'f':''}"></div>`;
     el.innerHTML=`<div class="ct-sdot"></div><div class="ct-slots-aerial">${sh}</div><div class="ct-num-aerial">C${String(n).padStart(2,'0')}</div>`;
     row.appendChild(el);
@@ -425,7 +453,7 @@ function renderGrid() {
       </div>
       <div class="mini-slots">${ms}</div>
       ${d.lote?`<div class="ct-lote-text">${d.lote}</div>`:''}
-      ${filled>0?`<div style="font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:2px;">${filled}/8 pallets</div>`:''}
+      ${filled>0?`<div style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text3);margin-top:3px;">${filled}/8 pallets</div>`:''}
     `;
     grid.appendChild(el);
   }
@@ -477,7 +505,7 @@ function aplicarTodas() {
   if(sel===null) return;
   const lote=document.getElementById('input-lote').value.trim();
   const data=document.getElementById('input-data').value;
-  if(!lote) { toast('Informe o lote antes de aplicar'); return; }
+  if(!lote){ toast('Informe o lote antes de aplicar', true); return; }
   for(let i=0;i<8;i++) dados[sel].slots[i]=lote;
   dados[sel].lote=lote;
   dados[sel].data=data;
